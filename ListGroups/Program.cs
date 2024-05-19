@@ -1,19 +1,30 @@
 ﻿using Azure.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Graph;
-using System.Reflection;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using ListGroups;
+using Azure.Core;
 
+/*
+ * Default Host creation:
+ * - Sets the Environment using the DOTNET_ENVIRONMENT env. variable
+ * - Initializes the ILogger with the Console sink
+ * - Initializes the IConfigurationBuilder with arguments, env. variables, and - if launched with the Debug launch setting - the user secrets
+*/
+var builder = Host.CreateApplicationBuilder(args);
 
-var configurationBuilder = new ConfigurationBuilder();
-configurationBuilder.AddUserSecrets(Assembly.GetExecutingAssembly(), true);
+//TokenCredential initialize
+var tokenCredentials = InitTokenCredential();
 
-var configuration = configurationBuilder.Build();
+//DI configuration
+builder.Services.AddSingleton(tokenCredentials);
+builder.Services.AddHostedService<ListGroupsHostedService>();
 
-var credentials = new ClientSecretCredential(configuration["AZURE_TENANT_ID"], configuration["AZURE_CLIENT_ID"], configuration["AZURE_CLIENT_SECRET"]);
-var graphClient = new GraphServiceClient(credentials);
+using IHost host = builder.Build();
+await host.RunAsync();
 
-var response = await graphClient.Groups.GetAsync();
-foreach (var group in response!.Value!.Take(10))
+TokenCredential InitTokenCredential()
 {
-    Console.WriteLine("{0}\t{1}", group.Id, group.DisplayName);
+    return new DefaultAzureCredential();
 }
