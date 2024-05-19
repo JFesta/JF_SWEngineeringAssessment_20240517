@@ -9,5 +9,6 @@ namespace ListGroups.Configs
     public class ListGroupsOptions
     {
         public required string OutputPath { get; set; }
+        public int PageSize { get; set; } = 10;
     }
 }

@@ -7,25 +7,22 @@ using Azure.Core;
 using ListGroups.Configs;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using CommandLine;
 using ListGroups.Services;
+using Microsoft.Graph.Models;
 
-//CL arguments parsing
-CommandLine.Parser.Default.ParseArguments<CommandLineOptions>(args)
-    .WithParsed(async clOptions =>
+try
+{
+    if (TryParseArgs(args, out var clOptions))
     {
-        //actions if parsing OK
-        try
-        {
-            using var host = InitApplication(clOptions);
-            await StartApplication(host);
-        }
-        catch (Exception ex)
-        {
-            //catch-all block
-            Console.Error.WriteLine(ex);
-        }
-    });
+        using var host = InitApplication(clOptions);
+        await StartApplication(host);
+    }
+}
+catch (Exception ex)
+{
+    //catch-all block
+    Console.Error.WriteLine(ex);
+}
 
 IHost InitApplication(CommandLineOptions clOptions)
 {
@@ -50,7 +47,7 @@ IHost InitApplication(CommandLineOptions clOptions)
     builder.Services.AddSingleton<TokenCredential>(provider => provider.GetRequiredService<TokenCredentialFactory>().Create());
 
     //Graph SDK client
-    builder.Services.AddScoped<GraphServiceClient>();
+    builder.Services.AddScoped<GraphServiceClient>(provider => new GraphServiceClient(provider.GetRequiredService<TokenCredential>()));
 
     //Business Logic
     builder.Services.AddScoped<ListGroupsService>();
@@ -65,11 +62,24 @@ async Task StartApplication(IHost host)
     await service.ExecuteAsync();
 }
 
+bool TryParseArgs(string[] args, out CommandLineOptions clOptions)
+{
+    var result = CommandLine.Parser.Default.ParseArguments<CommandLineOptions>(args);
+    clOptions = result.Value;
+    if (result.Errors?.Any() ?? false)
+        return false;
+    clOptions = result.Value;
+    return true;
+}
+
 void AddConsoleArguments(CommandLineOptions clOptions, ConfigurationManager configurationManager)
 {
     configurationManager[$"ListGroups:{nameof(ListGroupsOptions.OutputPath)}"] = clOptions.OutputPath ?? Environment.CurrentDirectory;
 
-    configurationManager[$"TokenCredentialFactory:{nameof(TokenCredentialFactoryOptions.TenantId)}"] = clOptions.TenantId;
-    configurationManager[$"TokenCredentialFactory:{nameof(TokenCredentialFactoryOptions.ClientId)}"] = clOptions.ClientId;
-    configurationManager[$"TokenCredentialFactory:{nameof(TokenCredentialFactoryOptions.Secret)}"] = clOptions.Secret;
+    if (!string.IsNullOrWhiteSpace(clOptions.TenantId) && !string.IsNullOrWhiteSpace(clOptions.ClientId) && !string.IsNullOrWhiteSpace(clOptions.Secret))
+    {
+        configurationManager[$"TokenCredentialFactory:{nameof(TokenCredentialFactoryOptions.TenantId)}"] = clOptions.TenantId;
+        configurationManager[$"TokenCredentialFactory:{nameof(TokenCredentialFactoryOptions.ClientId)}"] = clOptions.ClientId;
+        configurationManager[$"TokenCredentialFactory:{nameof(TokenCredentialFactoryOptions.Secret)}"] = clOptions.Secret;
+    }
 }
