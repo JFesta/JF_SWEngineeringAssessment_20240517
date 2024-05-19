@@ -3,51 +3,73 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Graph;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using ListGroups;
 using Azure.Core;
 using ListGroups.Configs;
-using CommandLine;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using CommandLine;
+using ListGroups.Services;
 
 //CL arguments parsing
 CommandLine.Parser.Default.ParseArguments<CommandLineOptions>(args)
-    .WithParsed(async options =>
-     {
-         await InitAndStartApplication(options);
-     });
+    .WithParsed(async clOptions =>
+    {
+        //actions if parsing OK
+        try
+        {
+            using var host = InitApplication(clOptions);
+            await StartApplication(host);
+        }
+        catch (Exception ex)
+        {
+            //catch-all block
+            Console.Error.WriteLine(ex);
+        }
+    });
 
-async Task InitAndStartApplication(CommandLineOptions clOptions)
+IHost InitApplication(CommandLineOptions clOptions)
 {
     /*
      * Default Host creation:
      * - Sets the Environment using the DOTNET_ENVIRONMENT env. variable
      * - Initializes the ILogger with the Console sink
-     * - Initializes the IConfigurationBuilder with arguments, env. variables, and - if launched with the Debug launch setting - the user secrets
+     * - Initializes the IConfigurationBuilder with env. variables, the appsettings.json file, and - if launched with the Debug launch setting - the user secrets
+     * Arguments aren't injected directly since we need to convert their names first, and this is done by the AddConsoleArguments method
     */
     var builder = Host.CreateApplicationBuilder();
 
-    //TokenCredential initialize
-    var tokenCredentials = InitTokenCredential(clOptions);
+    //registers console args individually into the ConfigurationManager
+    AddConsoleArguments(clOptions, builder.Configuration);
 
-    //DI configuration
-    builder.Services.AddSingleton(tokenCredentials);
-    builder.Services.AddSingleton<GraphServiceClient>();
-    builder.Services.AddHostedService<ListGroupsHostedService>();
+    //Options setup
+    builder.Services.Configure<ListGroupsOptions>(builder.Configuration.GetSection("ListGroups"));
+    builder.Services.Configure<TokenCredentialFactoryOptions>(builder.Configuration.GetSection("TokenCredentialFactory"));
 
-    using IHost host = builder.Build();
-    await host.RunAsync();
+    //TokenCredential: singleton token handler
+    builder.Services.AddSingleton<TokenCredentialFactory>();
+    builder.Services.AddSingleton<TokenCredential>(provider => provider.GetRequiredService<TokenCredentialFactory>().Create());
+
+    //Graph SDK client
+    builder.Services.AddScoped<GraphServiceClient>();
+
+    //Business Logic
+    builder.Services.AddScoped<ListGroupsService>();
+
+    return builder.Build();
 }
 
-/*
- * Credentials info are selected from (from the highest to the lowest priority):
- * - Console args
- * - User Secrets (only if Environment = Development)
- * - Environment Variables
- * - Other mechanisms, e.g. Managed Identity (check the DefaultAzureCredential class' doc: https://learn.microsoft.com/en-us/dotnet/api/azure.identity.defaultazurecredential?view=azure-dotnet)
- */
-TokenCredential InitTokenCredential(CommandLineOptions clOptions)
+async Task StartApplication(IHost host)
 {
-    return (!string.IsNullOrWhiteSpace(clOptions.TenantId) && !string.IsNullOrWhiteSpace(clOptions.ClientId) && !string.IsNullOrWhiteSpace(clOptions.Secret))
-        ? new ClientSecretCredential(clOptions.TenantId, clOptions.ClientId, clOptions.Secret)
-        : new DefaultAzureCredential();
+    using var scope = host.Services.CreateScope();
+    var service = scope.ServiceProvider.GetRequiredService<ListGroupsService>();
+    await service.ExecuteAsync();
+}
+
+void AddConsoleArguments(CommandLineOptions clOptions, ConfigurationManager configurationManager)
+{
+    configurationManager[$"ListGroups:{nameof(ListGroupsOptions.OutputPath)}"] = clOptions.OutputPath ?? Environment.CurrentDirectory;
+
+    configurationManager[$"TokenCredentialFactory:{nameof(TokenCredentialFactoryOptions.TenantId)}"] = clOptions.TenantId;
+    configurationManager[$"TokenCredentialFactory:{nameof(TokenCredentialFactoryOptions.ClientId)}"] = clOptions.ClientId;
+    configurationManager[$"TokenCredentialFactory:{nameof(TokenCredentialFactoryOptions.Secret)}"] = clOptions.Secret;
 }

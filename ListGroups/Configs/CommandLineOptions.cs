@@ -9,6 +9,9 @@ namespace ListGroups.Configs;
 
 public class CommandLineOptions
 {
+    [Option("output", Required = false, HelpText = "Output folder's path; current directory is used as default")]
+    public string? OutputPath { get; set; }
+
     [Option("tenantId", Required = false, HelpText = "Azure TenantId")]
     public string? TenantId { get; set; }
 
