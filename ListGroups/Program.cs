@@ -7,9 +7,9 @@ using Azure.Core;
 using ListGroups.Configs;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using ListGroups.Services;
 using Microsoft.Graph.Models;
 using ListGroups.Tokens;
+using ListGroups.Services;
 
 try
 {

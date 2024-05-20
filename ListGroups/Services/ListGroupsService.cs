@@ -17,6 +17,7 @@ public class ListGroupsService(ILogger<ListGroupsService> logger, IOptions<ListG
     public async Task<ListGroupsResult> ExecuteAsync()
     {
         var optionsValue = options.Value;
+        var outputLocation = Path.Combine(optionsValue.OutputPath, "MSGraph/Groups");
 
         //execute first call setting the page size
         var response = await graphClient.Groups.GetAsync(requestConfig =>
@@ -29,7 +30,7 @@ public class ListGroupsService(ILogger<ListGroupsService> logger, IOptions<ListG
         if (response == null || (response.OdataCount ?? 0L) == 0L)
         {
             logger.LogDebug("Empty response");
-            return new ListGroupsResult(optionsValue.OutputPath, 0);
+            return new ListGroupsResult(outputLocation, 0);
         }
 
         //setup the pageIterator: needs a callback to be executed for each read item on each page
@@ -44,6 +45,6 @@ public class ListGroupsService(ILogger<ListGroupsService> logger, IOptions<ListG
                 });
 
         await pageIterator.IterateAsync();
-        return new ListGroupsResult(optionsValue.OutputPath, response.OdataCount.Value);
+        return new ListGroupsResult(outputLocation, response.OdataCount.Value);
     }
 }
