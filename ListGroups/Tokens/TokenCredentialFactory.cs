@@ -10,7 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ListGroups.Services;
+namespace ListGroups.Tokens;
 
 /// <summary>
 /// Creates a new TokenCredential instance based on configuration.

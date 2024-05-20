@@ -9,13 +9,14 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using ListGroups.Services;
 using Microsoft.Graph.Models;
+using ListGroups.Tokens;
 
 try
 {
     if (TryParseArgs(args, out var clOptions))
     {
         using var host = InitApplication(clOptions);
-        await StartApplication(host);
+        await ExecuteApplication(host);
     }
 }
 catch (Exception ex)
@@ -55,11 +56,14 @@ IHost InitApplication(CommandLineOptions clOptions)
     return builder.Build();
 }
 
-async Task StartApplication(IHost host)
+async Task ExecuteApplication(IHost host)
 {
     using var scope = host.Services.CreateScope();
     var service = scope.ServiceProvider.GetRequiredService<ListGroupsService>();
-    await service.ExecuteAsync();
+    var result  = await service.ExecuteAsync();
+    Console.WriteLine("Completed Group list!");
+    Console.WriteLine("Group Count: {0}", result.Count);
+    Console.WriteLine("Output location: {0}", result.Location);
 }
 
 bool TryParseArgs(string[] args, out CommandLineOptions clOptions)

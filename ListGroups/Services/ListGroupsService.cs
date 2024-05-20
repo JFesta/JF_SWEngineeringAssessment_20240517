@@ -14,8 +14,7 @@ namespace ListGroups.Services;
 /// </summary>
 public class ListGroupsService(ILogger<ListGroupsService> logger, IOptions<ListGroupsOptions> options, GraphServiceClient graphClient)
 {
-
-    public async Task ExecuteAsync()
+    public async Task<ListGroupsResult> ExecuteAsync()
     {
         var optionsValue = options.Value;
 
@@ -23,12 +22,14 @@ public class ListGroupsService(ILogger<ListGroupsService> logger, IOptions<ListG
         var response = await graphClient.Groups.GetAsync(requestConfig =>
         {
             requestConfig.QueryParameters.Top = optionsValue.PageSize;
+            requestConfig.QueryParameters.Count = true;
+            requestConfig.Headers.Add("ConsistencyLevel", "eventual");
         });
 
-        if (response == null)
+        if (response == null || (response.OdataCount ?? 0L) == 0L)
         {
-            logger.LogWarning("Empty response");
-            return;
+            logger.LogDebug("Empty response");
+            return new ListGroupsResult(optionsValue.OutputPath, 0);
         }
 
         //setup the pageIterator: needs a callback to be executed for each read item on each page
@@ -36,12 +37,13 @@ public class ListGroupsService(ILogger<ListGroupsService> logger, IOptions<ListG
             .CreatePageIterator(
                 graphClient,
                 response,
-                (group) =>
+                async (group) =>
                 {
                     logger.LogInformation("{Id}\t{DisplayName}", group.Id, group.DisplayName);
                     return true;
                 });
 
         await pageIterator.IterateAsync();
+        return new ListGroupsResult(optionsValue.OutputPath, response.OdataCount.Value);
     }
 }
