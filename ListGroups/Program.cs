@@ -48,10 +48,11 @@ IHost InitApplication(CommandLineOptions clOptions)
     builder.Services.AddSingleton<TokenCredential>(provider => provider.GetRequiredService<TokenCredentialFactory>().Create());
 
     //Graph SDK client
-    builder.Services.AddScoped<GraphServiceClient>(provider => new GraphServiceClient(provider.GetRequiredService<TokenCredential>()));
+    builder.Services.AddScoped<GraphServiceClient>();
 
     //Business Logic
     builder.Services.AddScoped<ListGroupsService>();
+    builder.Services.AddScoped<GroupWriter>();
 
     return builder.Build();
 }
