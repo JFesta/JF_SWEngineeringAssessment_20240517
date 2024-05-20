@@ -45,6 +45,6 @@ public class ListGroupsService(ILogger<ListGroupsService> logger, IOptions<ListG
                 });
 
         await pageIterator.IterateAsync();
-        return new ListGroupsResult(outputLocation, response.OdataCount.Value);
+        return new ListGroupsResult(outputLocation, response.OdataCount ?? 0L);
     }
 }
