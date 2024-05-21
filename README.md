@@ -54,6 +54,8 @@ There are multiple ways to authenticate to the correct Azure Tenant. Available m
     3. Managed Identity
     4. Etc.
 
+If you have your credentials already set in Visual Studio, or if your machine has an already configured managed identity, then you don't need to do anything.
+
 ### User Secrets
 **Warning**: This works only if debugging, more precisely if the Application is running with the DOTNET_ENVIRONMENT env. variable set to "Development".
 
@@ -75,4 +77,25 @@ You should place a *secrets.json* file at a specific path. You can access the fi
 You can find more info on this here: [Safe storage of app secrets in development in ASP.NET Core](https://learn.microsoft.com/en-us/aspnet/core/security/app-secrets?view=aspnetcore-8.0&tabs=windows)
 
 ###  AppSettings file
-Add to either the appsettings.json* or *appsettings.\[Environment\].json* file
+Add to either the *appsettings.json* or *appsettings.\[Environment\].json* file the following section (be sure to not accidentally push secrets into the repo):
+
+```json
+"TokenCredentialFactory": {
+    "TenantId": "xxxx",
+    "ClientId": "yyyy",
+    "Secret": "zzzz"
+  }
+```
+
+### DefaultAzureCredentials
+This class is by default configured with different authentication methods. 
+
+Required environment variables, when using the [EnvironmentCredential](https://learn.microsoft.com/en-us/dotnet/api/azure.identity.environmentcredential?view=azure-dotnet) method, are:
+* AZURE_TENANT_ID
+* AZURE_CLIENT_ID
+* AZURE_CLIENT_SECRET
+
+## Debugging
+Solution is already shipped with a LaunchProfile called "Debug". This sets the *DOTNET_ENVIRONMENT* environment variable as *Development* and executes the "groups" command.
+
+Provided you have correctly configured the authentication, there's nothing else to do in order to be able to debug.
