@@ -1,11 +1,11 @@
 using Azure.Identity;
-using ListGroups.Configs;
-using ListGroups.Tokens;
+using GraphProcessor.Configs;
+using GraphProcessor.Tokens;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
-namespace ListGroups.Tests;
+namespace GraphProcessor.Tests;
 
 public class TokenCredentialFactoryTests
 {

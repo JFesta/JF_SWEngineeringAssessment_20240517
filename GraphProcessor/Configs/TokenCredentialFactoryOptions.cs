@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ListGroups.Configs;
+namespace GraphProcessor.Configs;
 
 public class TokenCredentialFactoryOptions
 {

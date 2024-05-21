@@ -4,12 +4,13 @@ using Microsoft.Graph;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Azure.Core;
-using ListGroups.Configs;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Graph.Models;
-using ListGroups.Tokens;
-using ListGroups.Services;
+using GraphProcessor.Configs;
+using GraphProcessor.Arguments;
+using GraphProcessor.Tokens;
+using GraphProcessor.Services;
 
 try
 {
@@ -40,7 +41,7 @@ IHost InitApplication(CommandLineOptions clOptions)
     AddConsoleArguments(clOptions, builder.Configuration);
 
     //Options setup
-    builder.Services.Configure<ListGroupsOptions>(builder.Configuration.GetSection("ListGroups"));
+    builder.Services.Configure<DownloadGroupsOptions>(builder.Configuration.GetSection("DownloadGroups"));
     builder.Services.Configure<TokenCredentialFactoryOptions>(builder.Configuration.GetSection("TokenCredentialFactory"));
 
     //TokenCredential: singleton token handler
@@ -51,7 +52,7 @@ IHost InitApplication(CommandLineOptions clOptions)
     builder.Services.AddScoped<GraphServiceClient>();
 
     //Business Logic
-    builder.Services.AddScoped<ListGroupsService>();
+    builder.Services.AddScoped<DownloadGroupsService>();
     builder.Services.AddScoped<GroupWriter>();
 
     return builder.Build();
@@ -60,7 +61,7 @@ IHost InitApplication(CommandLineOptions clOptions)
 async Task ExecuteApplication(IHost host)
 {
     using var scope = host.Services.CreateScope();
-    var service = scope.ServiceProvider.GetRequiredService<ListGroupsService>();
+    var service = scope.ServiceProvider.GetRequiredService<DownloadGroupsService>();
     var result  = await service.ExecuteAsync();
     Console.WriteLine("Completed Group list!");
     Console.WriteLine("Group Count: {0}", result.Count);
@@ -79,7 +80,7 @@ bool TryParseArgs(string[] args, out CommandLineOptions clOptions)
 
 void AddConsoleArguments(CommandLineOptions clOptions, ConfigurationManager configurationManager)
 {
-    configurationManager[$"ListGroups:{nameof(ListGroupsOptions.OutputPath)}"] = clOptions.OutputPath ?? Environment.CurrentDirectory;
+    configurationManager[$"DownloadGroups:{nameof(DownloadGroupsOptions.OutputPath)}"] = clOptions.OutputPath ?? Environment.CurrentDirectory;
 
     if (!string.IsNullOrWhiteSpace(clOptions.TenantId) && !string.IsNullOrWhiteSpace(clOptions.ClientId) && !string.IsNullOrWhiteSpace(clOptions.Secret))
     {

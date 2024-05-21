@@ -1,10 +1,10 @@
 ﻿using Azure.Core;
 using Azure.Identity;
-using ListGroups.Configs;
+using GraphProcessor.Configs;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace ListGroups.Tokens;
+namespace GraphProcessor.Tokens;
 
 /// <summary>
 /// Creates a new TokenCredential instance based on configuration.

@@ -2,7 +2,7 @@
 using Microsoft.Graph.Models;
 using Newtonsoft.Json;
 
-namespace ListGroups.Services;
+namespace GraphProcessor.Services;
 
 /// <summary>
 /// This class is responsible for writing Groups into the File System.

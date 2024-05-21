@@ -1,5 +1,5 @@
 ﻿using Azure.Core;
-using ListGroups.Configs;
+using GraphProcessor.Configs;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -7,14 +7,14 @@ using Microsoft.Extensions.Options;
 using Microsoft.Graph;
 using Microsoft.Graph.Models;
 
-namespace ListGroups.Services;
+namespace GraphProcessor.Services;
 
 /// <summary>
 /// Main business logic
 /// </summary>
-public class ListGroupsService(ILogger<ListGroupsService> logger, IOptions<ListGroupsOptions> options, GraphServiceClient graphClient, GroupWriter groupWriter)
+public class DownloadGroupsService(ILogger<DownloadGroupsService> logger, IOptions<DownloadGroupsOptions> options, GraphServiceClient graphClient, GroupWriter groupWriter)
 {
-    public async Task<ListGroupsResult> ExecuteAsync()
+    public async Task<DownloadGroupsResult> ExecuteAsync()
     {
         var optionsValue = options.Value;
         var outputLocation = Path.Combine(optionsValue.OutputPath, "MSGraph", "Groups");
@@ -31,7 +31,7 @@ public class ListGroupsService(ILogger<ListGroupsService> logger, IOptions<ListG
         if (response == null || (response.OdataCount ?? 0L) == 0L)
         {
             logger.LogDebug("Empty response");
-            return new ListGroupsResult(outputLocation, 0);
+            return new DownloadGroupsResult(outputLocation, 0);
         }
 
         //clear the output folder
@@ -49,6 +49,6 @@ public class ListGroupsService(ILogger<ListGroupsService> logger, IOptions<ListG
                 });
 
         await pageIterator.IterateAsync();
-        return new ListGroupsResult(outputLocation, response.OdataCount ?? 0L);
+        return new DownloadGroupsResult(outputLocation, response.OdataCount ?? 0L);
     }
 }
