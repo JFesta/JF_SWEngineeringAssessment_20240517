@@ -40,9 +40,12 @@ Finds and downloads all AAD Groups into a specified location as multiple Json fi
 
 Usage:
 ```
-GraphProcessor.exe groups "D:\SomeFolder"
+GraphProcessor.exe groups
+GraphProcessor.exe groups --output "D:\SomeFolder"
 ```
-Writes all groups into the *D:\SomeFolder\MSGraph\Groups* folder.
+
+Known Issues:
+* Command fails when processing a Group having an illegal character for the current File System in its name, e.g. backslash *\\*
 
 ## Authentication Setup
 There are multiple ways to authenticate to the correct Azure Tenant. Available methods are chosen in this order:
