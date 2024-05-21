@@ -9,7 +9,7 @@ namespace ListGroups.Tests;
 
 public class TokenCredentialFactoryTests
 {
-    private ILogger<TokenCredentialFactory> _logger;
+    private readonly ILogger<TokenCredentialFactory> _logger;
 
     public TokenCredentialFactoryTests()
     {
