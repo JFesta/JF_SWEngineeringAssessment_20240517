@@ -2,6 +2,7 @@
   "profiles": {
     "Debug": {
       "commandName": "Project",
+      "commandLineArgs": "groups",
       "environmentVariables": {
         "DOTNET_ENVIRONMENT": "Development"
       }

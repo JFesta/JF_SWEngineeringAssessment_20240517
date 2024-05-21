@@ -1,28 +1,33 @@
 ﻿using Azure.Core;
 using GraphProcessor.Configs;
+using GraphProcessor.Services;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Microsoft.Graph;
 using Microsoft.Graph.Models;
 
-namespace GraphProcessor.Services;
+namespace GraphProcessor.CommandHandlers;
+
+/// <summary>
+/// Command execution result
+/// </summary>
+/// <param name="Location"></param>
+/// <param name="Count"></param>
+public record DownloadGroupsResult(string Location, long Count);
 
 /// <summary>
 /// Main business logic
 /// </summary>
-public class DownloadGroupsService(ILogger<DownloadGroupsService> logger, IOptions<DownloadGroupsOptions> options, GraphServiceClient graphClient, GroupWriter groupWriter)
+public class DownloadGroupsCommandHandler(ILogger<DownloadGroupsCommandHandler> logger, GraphServiceClient graphClient, GroupWriter groupWriter)
 {
-    public async Task<DownloadGroupsResult> ExecuteAsync()
+    public async Task<DownloadGroupsResult> ExecuteAsync(string outputPath)
     {
-        var optionsValue = options.Value;
-        var outputLocation = Path.Combine(optionsValue.OutputPath, "MSGraph", "Groups");
+        var outputLocation = Path.Combine(outputPath, "MSGraph", "Groups");
 
         //execute first call setting the page size
         var response = await graphClient.Groups.GetAsync(requestConfig =>
         {
-            requestConfig.QueryParameters.Top = optionsValue.PageSize;
+            requestConfig.QueryParameters.Top = 10;
             requestConfig.QueryParameters.Count = true;
             requestConfig.Headers.Add("ConsistencyLevel", "eventual");
         });

@@ -10,7 +10,6 @@ namespace GraphProcessor.Tokens;
 /// Creates a new TokenCredential instance based on configuration.
 /// Credentials info are selected from (from the highest to the lowest priority):
 /// <list type="number">
-///     <item>Console args</item>
 ///     <item>User Secrets (only if Environment = "Development" - check https://learn.microsoft.com/en-us/aspnet/core/security/app-secrets?view=aspnetcore-8.0)</item>
 ///     <item>Environment Variables</item>
 ///     <item>Other mechanisms, e.g. Managed Identity (check the DefaultAzureCredential class' doc: https://learn.microsoft.com/en-us/dotnet/api/azure.identity.defaultazurecredential?view=azure-dotnet)</item>

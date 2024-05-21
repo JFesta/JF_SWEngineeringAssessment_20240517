@@ -11,13 +11,19 @@ using GraphProcessor.Configs;
 using GraphProcessor.Arguments;
 using GraphProcessor.Tokens;
 using GraphProcessor.Services;
+using GraphProcessor.CommandHandlers;
 
 try
 {
-    if (TryParseArgs(args, out var clOptions))
+    if (TryParseArgs(args, out var parsedOptions, out var parsedType))
     {
-        using var host = InitApplication(clOptions);
-        await ExecuteApplication(host);
+        using var host = InitApplication();
+        switch (parsedOptions)
+        {
+            case CliDownloadGroupsOptions cliDownloadGroupsOptions:
+                await ExecuteDownloadGroups(host, cliDownloadGroupsOptions);
+                break;
+        }
     }
 }
 catch (Exception ex)
@@ -26,22 +32,17 @@ catch (Exception ex)
     Console.Error.WriteLine(ex);
 }
 
-IHost InitApplication(CommandLineOptions clOptions)
+IHost InitApplication()
 {
     /*
      * Default Host creation:
      * - Sets the Environment using the DOTNET_ENVIRONMENT env. variable
      * - Initializes the ILogger with the Console sink
      * - Initializes the IConfigurationBuilder with env. variables, the appsettings.json file, and - if launched with the Debug launch setting - the user secrets
-     * Arguments aren't injected directly since we need to convert their names first, and this is done by the AddConsoleArguments method
     */
     var builder = Host.CreateApplicationBuilder();
 
-    //registers console args individually into the ConfigurationManager
-    AddConsoleArguments(clOptions, builder.Configuration);
-
     //Options setup
-    builder.Services.Configure<DownloadGroupsOptions>(builder.Configuration.GetSection("DownloadGroups"));
     builder.Services.Configure<TokenCredentialFactoryOptions>(builder.Configuration.GetSection("TokenCredentialFactory"));
 
     //TokenCredential: singleton token handler
@@ -52,40 +53,30 @@ IHost InitApplication(CommandLineOptions clOptions)
     builder.Services.AddScoped<GraphServiceClient>();
 
     //Business Logic
-    builder.Services.AddScoped<DownloadGroupsService>();
+    builder.Services.AddScoped<DownloadGroupsCommandHandler>();
     builder.Services.AddScoped<GroupWriter>();
 
     return builder.Build();
 }
 
-async Task ExecuteApplication(IHost host)
+async Task ExecuteDownloadGroups(IHost host, CliDownloadGroupsOptions input)
 {
     using var scope = host.Services.CreateScope();
-    var service = scope.ServiceProvider.GetRequiredService<DownloadGroupsService>();
-    var result  = await service.ExecuteAsync();
-    Console.WriteLine("Completed Group list!");
+    var service = scope.ServiceProvider.GetRequiredService<DownloadGroupsCommandHandler>();
+    var result  = await service.ExecuteAsync(input.OutputPath!);
+    Console.WriteLine("Completed Group download!");
     Console.WriteLine("Group Count: {0}", result.Count);
     Console.WriteLine("Output location: {0}", result.Location);
 }
 
-bool TryParseArgs(string[] args, out CommandLineOptions clOptions)
+/*
+ * Returns true if the arguments were correctly parsed; in this case the actual object and its type are returned as well as
+ * output parameters.
+*/
+bool TryParseArgs(string[] args, out object parsedOptions, out Type parsedType)
 {
-    var result = CommandLine.Parser.Default.ParseArguments<CommandLineOptions>(args);
-    clOptions = result.Value;
-    if (result.Errors?.Any() ?? false)
-        return false;
-    clOptions = result.Value;
-    return true;
-}
-
-void AddConsoleArguments(CommandLineOptions clOptions, ConfigurationManager configurationManager)
-{
-    configurationManager[$"DownloadGroups:{nameof(DownloadGroupsOptions.OutputPath)}"] = clOptions.OutputPath ?? Environment.CurrentDirectory;
-
-    if (!string.IsNullOrWhiteSpace(clOptions.TenantId) && !string.IsNullOrWhiteSpace(clOptions.ClientId) && !string.IsNullOrWhiteSpace(clOptions.Secret))
-    {
-        configurationManager[$"TokenCredentialFactory:{nameof(TokenCredentialFactoryOptions.TenantId)}"] = clOptions.TenantId;
-        configurationManager[$"TokenCredentialFactory:{nameof(TokenCredentialFactoryOptions.ClientId)}"] = clOptions.ClientId;
-        configurationManager[$"TokenCredentialFactory:{nameof(TokenCredentialFactoryOptions.Secret)}"] = clOptions.Secret;
-    }
+    var result = CommandLine.Parser.Default.ParseArguments(args, typeof(CliDownloadGroupsOptions));
+    parsedOptions = result.Value;
+    parsedType = result.TypeInfo.Current;
+    return !(result.Errors?.Any() ?? false);
 }
